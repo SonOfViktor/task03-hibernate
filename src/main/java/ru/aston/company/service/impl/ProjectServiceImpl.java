@@ -12,6 +12,7 @@ import ru.aston.company.service.ProjectService;
 import ru.aston.company.service.converter.ProjectConverter;
 import java.util.List;
 
+import static java.util.Optional.ofNullable;
 import static org.springframework.util.StringUtils.hasText;
 
 @Service
@@ -22,10 +23,9 @@ public class ProjectServiceImpl implements ProjectService {
     private final ProjectConverter projectConverter;
 
     public List<ProjectDto> findAll() {
-        Session session = sessionFactory.openSession();
         List<ProjectDto> projectDtoList;
 
-        try (session) {
+        try (Session session = sessionFactory.openSession()) {
             session.beginTransaction();
 
             List<Project> projects = projectDao.findAll(session);
@@ -34,45 +34,34 @@ public class ProjectServiceImpl implements ProjectService {
                     .toList();
 
             session.getTransaction().commit();
-        } catch (Exception ex) {
-            session.getTransaction().rollback();
-            throw ex;
         }
 
         return projectDtoList;
     }
 
     public ProjectDetailDto findById(long id) {
-        Session session = sessionFactory.openSession();
         ProjectDetailDto projectDetailDto;
 
-        try (session) {
+        try (Session session = sessionFactory.openSession()) {
             session.beginTransaction();
 
             projectDetailDto = projectConverter.convertProjectToProjectDetailDto(projectDao.findById(session, id));
 
             session.getTransaction().commit();
-        } catch (Exception ex) {
-            session.getTransaction().rollback();
-            throw ex;
         }
 
         return projectDetailDto;
     }
 
     public ProjectDetailDto findByName(String name) {
-        Session session = sessionFactory.openSession();
         ProjectDetailDto projectDetailDto;
 
-        try (session) {
+        try (Session session = sessionFactory.openSession()) {
             session.beginTransaction();
 
             projectDetailDto = projectConverter.convertProjectToProjectDetailDto(projectDao.findByName(session, name));
 
             session.getTransaction().commit();
-        } catch (Exception ex) {
-            session.getTransaction().rollback();
-            throw ex;
         }
 
         return projectDetailDto;
@@ -80,10 +69,11 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     public ProjectDto addProject(ProjectDto project) {
-        Session session = sessionFactory.openSession();
+        Session session = null;
         ProjectDto addedProjectDto;
 
-        try (session) {
+        try {
+            session = sessionFactory.openSession();
             session.beginTransaction();
 
             Project addedProject = Project.builder()
@@ -94,8 +84,10 @@ public class ProjectServiceImpl implements ProjectService {
 
             session.getTransaction().commit();
         } catch (Exception ex) {
-            session.getTransaction().rollback();
+            ofNullable(session).ifPresent(s -> s.getTransaction().rollback());
             throw ex;
+        } finally {
+            ofNullable(session).ifPresent(Session::close);
         }
 
         return addedProjectDto;
@@ -103,10 +95,11 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     public ProjectDetailDto updateProject(long id, ProjectDto project) {
-        Session session = sessionFactory.openSession();
+        Session session = null;
         ProjectDetailDto updatedProjectDto;
 
-        try (session) {
+        try {
+            session = sessionFactory.openSession();
             session.beginTransaction();
 
             Project oldProject = projectDao.findById(session, id);
@@ -115,8 +108,10 @@ public class ProjectServiceImpl implements ProjectService {
 
             session.getTransaction().commit();
         } catch (Exception ex) {
-            session.getTransaction().rollback();
+            ofNullable(session).ifPresent(s -> s.getTransaction().rollback());
             throw ex;
+        } finally {
+            ofNullable(session).ifPresent(Session::close);
         }
 
         return updatedProjectDto;
@@ -124,9 +119,10 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     public void deleteProject(long id) {
-        Session session = sessionFactory.openSession();
+        Session session = null;
 
-        try (session) {
+        try {
+            session = sessionFactory.openSession();
             session.beginTransaction();
 
             Project project = projectDao.findById(session, id);
@@ -134,8 +130,10 @@ public class ProjectServiceImpl implements ProjectService {
 
             session.getTransaction().commit();
         } catch (Exception ex) {
-            session.getTransaction().rollback();
+            ofNullable(session).ifPresent(s -> s.getTransaction().rollback());
             throw ex;
+        } finally {
+            ofNullable(session).ifPresent(Session::close);
         }
     }
 }

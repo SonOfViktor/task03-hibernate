@@ -5,10 +5,7 @@ import org.springframework.stereotype.Repository;
 import ru.aston.company.dao.PositionDao;
 import ru.aston.company.model.entity.Position;
 import java.util.List;
-import java.util.NoSuchElementException;
 
-import static java.util.Optional.ofNullable;
-import static org.springframework.util.CollectionUtils.firstElement;
 import static ru.aston.company.dao.constant.DaoConstants.*;
 
 @Repository
@@ -38,22 +35,16 @@ public class PositionDaoImpl implements PositionDao {
 
     @Override
     public Position findById(Session session, long id) {
-        List<Position> positions = session.createQuery(SELECT_POSITION_BY_ID_HQL, Position.class)
+        return session.createQuery(SELECT_POSITION_BY_ID_HQL, Position.class)
                 .setParameter(ID, id)
-                .getResultList();
-
-        return ofNullable(firstElement(positions))
-                .orElseThrow(() -> new NoSuchElementException("Project with id " + id + " doesn't exist"));
+                .getSingleResult();
     }
 
     @Override
     public Position findByName(Session session, String name) {
-        List<Position> positions = session.createQuery(SELECT_POSITION_BY_NAME_HQL, Position.class)
+        return session.createQuery(SELECT_POSITION_BY_NAME_HQL, Position.class)
                 .setParameter(NAME, name)
-                .getResultList();
-
-        return ofNullable(firstElement(positions))
-                .orElseThrow(() -> new NoSuchElementException("Position with name " + name + " doesn't exist"));
+                .getSingleResult();
     }
 
     @Override

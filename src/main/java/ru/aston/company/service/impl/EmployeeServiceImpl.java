@@ -14,6 +14,7 @@ import ru.aston.company.service.EmployeeService;
 import ru.aston.company.service.converter.EmployeeConverter;
 import java.util.List;
 
+import static java.util.Optional.*;
 import static org.springframework.util.StringUtils.hasText;
 
 @Service
@@ -39,37 +40,31 @@ public class EmployeeServiceImpl implements EmployeeService {
                     .toList();
 
             session.getTransaction().commit();
-        } catch (Exception ex) {
-            session.getTransaction().rollback();
-            throw ex;
         }
+
         return employeeDtoList;
     }
 
     @Override
     public EmployeeDetailDto findById(long id) {
-        Session session = sessionFactory.openSession();
         EmployeeDetailDto employeeDetailDto;
 
-        try (session) {
+        try (Session session = sessionFactory.openSession()) {
             session.beginTransaction();
 
             employeeDetailDto = employeeConverter.convertEmployeeToEmployeeDetailDto(employeeDao.findById(session, id));
 
             session.getTransaction().commit();
-        } catch (Exception ex) {
-            session.getTransaction().rollback();
-            throw ex;
         }
+
         return employeeDetailDto;
     }
 
     @Override
     public List<EmployeeDetailDto> findAllByName(String name) {
-        Session session = sessionFactory.openSession();
         List<EmployeeDetailDto> employeeDtoList;
 
-        try (session) {
+        try (Session session = sessionFactory.openSession()) {
             session.beginTransaction();
 
             employeeDtoList = employeeDao.findByName(session, name)
@@ -78,9 +73,6 @@ public class EmployeeServiceImpl implements EmployeeService {
                     .toList();
 
             session.getTransaction().commit();
-        } catch (Exception ex) {
-            session.getTransaction().rollback();
-            throw ex;
         }
 
         return employeeDtoList;
@@ -88,10 +80,11 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     public EmployeeDetailDto addEmployee(EmployeeDetailDto employee) {
-        Session session = sessionFactory.openSession();
+        Session session = null;
         EmployeeDetailDto addedEmployeeDto;
 
-        try (session) {
+        try {
+            session = sessionFactory.openSession();
             session.beginTransaction();
 
             Employee addedEmployee = employeeConverter
@@ -101,18 +94,22 @@ public class EmployeeServiceImpl implements EmployeeService {
 
             session.getTransaction().commit();
         } catch (Exception ex) {
-            session.getTransaction().rollback();
+            ofNullable(session).ifPresent(s -> s.getTransaction().rollback());
             throw ex;
+        } finally {
+            ofNullable(session).ifPresent(Session::close);
         }
+
         return addedEmployeeDto;
     }
 
     @Override
     public EmployeeDetailDto updateEmployee(long id, EmployeeDetailDto employee) {
-        Session session = sessionFactory.openSession();
+        Session session = null;
         EmployeeDetailDto updatedEmployeeDto;
 
-        try (session) {
+        try {
+            session = sessionFactory.openSession();
             session.beginTransaction();
 
             Employee updatedEmployee = employeeDao.findById(session, id);
@@ -121,8 +118,10 @@ public class EmployeeServiceImpl implements EmployeeService {
 
             session.getTransaction().commit();
         } catch (Exception ex) {
-            session.getTransaction().rollback();
+            ofNullable(session).ifPresent(s -> s.getTransaction().rollback());
             throw ex;
+        } finally {
+            ofNullable(session).ifPresent(Session::close);
         }
 
         return updatedEmployeeDto;
@@ -130,9 +129,10 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     public void deleteEmployee(long id) {
-        Session session = sessionFactory.openSession();
+        Session session = null;
 
-        try (session) {
+        try {
+            session = sessionFactory.openSession();
             session.beginTransaction();
 
             Employee employee = employeeDao.findById(session, id);
@@ -140,8 +140,10 @@ public class EmployeeServiceImpl implements EmployeeService {
 
             session.getTransaction().commit();
         } catch (Exception ex) {
-            session.getTransaction().rollback();
+            ofNullable(session).ifPresent(s -> s.getTransaction().rollback());
             throw ex;
+        } finally {
+            ofNullable(session).ifPresent(Session::close);
         }
     }
 

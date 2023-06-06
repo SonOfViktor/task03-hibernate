@@ -12,6 +12,7 @@ import ru.aston.company.service.PositionService;
 import ru.aston.company.service.converter.PositionConverter;
 import java.util.List;
 
+import static java.util.Optional.ofNullable;
 import static org.springframework.util.StringUtils.hasText;
 
 @Service
@@ -23,10 +24,9 @@ public class PositionServiceImpl implements PositionService {
 
     @Override
     public List<PositionDto> findAll() {
-        Session session = sessionFactory.openSession();
         List<PositionDto> positionDtoList;
 
-        try (session) {
+        try (Session session = sessionFactory.openSession()) {
             session.beginTransaction();
 
             List<Position> positions = positionDao.findAll(session);
@@ -35,9 +35,6 @@ public class PositionServiceImpl implements PositionService {
                     .toList();
 
             session.getTransaction().commit();
-        } catch (Exception ex) {
-            session.getTransaction().rollback();
-            throw ex;
         }
 
         return positionDtoList;
@@ -45,18 +42,14 @@ public class PositionServiceImpl implements PositionService {
 
     @Override
     public PositionDetailDto findById(long id) {
-        Session session = sessionFactory.openSession();
         PositionDetailDto positionDetailDto;
 
-        try (session) {
+        try (Session session = sessionFactory.openSession()) {
             session.beginTransaction();
 
             positionDetailDto = positionConverter.convertPositionToPositionDetailDto(positionDao.findById(session, id));
 
             session.getTransaction().commit();
-        } catch (Exception ex) {
-            session.getTransaction().rollback();
-            throw ex;
         }
 
         return positionDetailDto;
@@ -64,19 +57,15 @@ public class PositionServiceImpl implements PositionService {
 
     @Override
     public PositionDetailDto findByName(String name) {
-        Session session = sessionFactory.openSession();
         PositionDetailDto positionDetailDto;
 
-        try (session) {
+        try (Session session = sessionFactory.openSession()) {
             session.beginTransaction();
 
             positionDetailDto = positionConverter
                     .convertPositionToPositionDetailDto(positionDao.findByName(session, name));
 
             session.getTransaction().commit();
-        } catch (Exception ex) {
-            session.getTransaction().rollback();
-            throw ex;
         }
 
         return positionDetailDto;
@@ -84,10 +73,11 @@ public class PositionServiceImpl implements PositionService {
 
     @Override
     public PositionDto addPosition(PositionDto position) {
-        Session session = sessionFactory.openSession();
+        Session session = null;
         PositionDto addedPositionDto;
 
-        try (session) {
+        try {
+            session = sessionFactory.openSession();
             session.beginTransaction();
 
             Position addedPosition = Position.builder()
@@ -98,8 +88,10 @@ public class PositionServiceImpl implements PositionService {
 
             session.getTransaction().commit();
         } catch (Exception ex) {
-            session.getTransaction().rollback();
+            ofNullable(session).ifPresent(s -> s.getTransaction().rollback());
             throw ex;
+        } finally {
+            ofNullable(session).ifPresent(Session::close);
         }
 
         return addedPositionDto;
@@ -107,10 +99,11 @@ public class PositionServiceImpl implements PositionService {
 
     @Override
     public PositionDetailDto updatePosition(long id, PositionDto position) {
-        Session session = sessionFactory.openSession();
+        Session session = null;
         PositionDetailDto updatedPositionDto;
 
-        try (session) {
+        try {
+            session = sessionFactory.openSession();
             session.beginTransaction();
 
             Position oldPosition = positionDao.findById(session, id);
@@ -119,8 +112,10 @@ public class PositionServiceImpl implements PositionService {
 
             session.getTransaction().commit();
         } catch (Exception ex) {
-            session.getTransaction().rollback();
+            ofNullable(session).ifPresent(s -> s.getTransaction().rollback());
             throw ex;
+        } finally {
+            ofNullable(session).ifPresent(Session::close);
         }
 
         return updatedPositionDto;
@@ -128,9 +123,10 @@ public class PositionServiceImpl implements PositionService {
 
     @Override
     public void deletePosition(long id) {
-        Session session = sessionFactory.openSession();
+        Session session = null;
 
-        try (session) {
+        try {
+            session = sessionFactory.openSession();
             session.beginTransaction();
 
             Position position = positionDao.findById(session, id);
@@ -138,9 +134,10 @@ public class PositionServiceImpl implements PositionService {
 
             session.getTransaction().commit();
         } catch (Exception ex) {
-            session.getTransaction().rollback();
+            ofNullable(session).ifPresent(s -> s.getTransaction().rollback());
             throw ex;
+        } finally {
+            ofNullable(session).ifPresent(Session::close);
         }
-
     }
 }
